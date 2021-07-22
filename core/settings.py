@@ -24,7 +24,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'django-insecure-%&==jzm=_#$u3zhq&qs0^k&@5-n+nzcyn^v1!1xle_+9n4@_-_'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['.herokuapp.com']
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
