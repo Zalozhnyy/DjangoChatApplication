@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+<p>Welcome to your dashboard.</p>
+
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+          integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+
+    <title>Hello, world!</title>
+</head>
+
+<body>
+
+<div class="container">
+    <div class="row d-flex justify-content-center">
+        <div class="col-6">
+            <form>
+                <div class="form-group">
+                    <input class="form-control" id="input" type="text" placeholder="Введите имя пользователя"></br>
+                </div>
+                <input class="btn btn-secondary btn-lg btn-block" id="submit" type="button" value="Начать чат">
+
+            </form>
+        </div>
+    </div>
+</div>
+
+</body>
+
+{{ request.user.username|json_script:"user_username" }}
+<script>
+
+    const user_username = JSON.parse(document.getElementById('user_username').textContent);
+
+    document.querySelector('#submit').onclick = async function (e) {
+        const messageInputDom = document.querySelector('#input');
+        const targetUserName = messageInputDom.value;
+
+        let arr = [targetUserName, user_username];
+        arr.sort()
+
+        let response = await fetch('user_exist/' + targetUserName);
+
+        if (response.ok) { // если HTTP-статус в диапазоне 200-299
+            // получаем тело ответа (см. про этот метод ниже)
+            let json = await response.json();
+            if (!json['exist']) {
+                alert("Пользователь с именем: " + targetUserName + "  не найден");
+            } else {
+                window.location.href = 'chat/' + arr[0] + '_' + arr[1];
+            }
+
+        } else {
+            alert("Ошибка API нахождения пользователя: " + response.status);
+        }
+
+
+        console.log(targetUserName, user_username);
+    };
+
+
+</script>
+
+</html>
+
+{% endblock %}
