@@ -1,20 +1,25 @@
+import asyncio
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+from django.db import IntegrityError
+from asgiref.sync import sync_to_async
 
-from . import database
+from . import models
 
 
 class ChatRoomConsumer(AsyncWebsocketConsumer):
     def __init__(self):
         super().__init__()
 
-        self._db = database.PostgresDB()
-
     async def connect(self):
         self.room_name = self.scope['url_route']['kwargs']['room_name']
         self.room_group_name = 'chat_%s' % self.room_name
 
-        self._db.create_chat_id(self.room_name)
+        try:
+            d = models.ChatName(chat_name=self.room_name)
+            await sync_to_async(d.save, thread_sensitive=True)()
+        except IntegrityError:
+            pass
 
         await self.channel_layer.group_add(
             self.room_group_name,
@@ -23,10 +28,16 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        old_messages = self._db.get_chat_history(self.room_name)
+        _chat_id = await sync_to_async(models.ChatName.objects.get, thread_sensitive=True)(chat_name=self.room_name)
+        old_messages = await sync_to_async(models.Messages.objects.filter, thread_sensitive=True)(
+            chat_id_id=_chat_id.id)
+        old_messages = await sync_to_async(list)(old_messages)
+        await self._push_messages(old_messages)
+
+    async def _push_messages(self, old_messages):
         for message in old_messages:
             await self.send(text_data=json.dumps({
-                'message': message.message_value,
+                'message': message.message,
                 'username': message.sender,
             }))
 
@@ -60,4 +71,19 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
         }))
 
         if send_db:
-            self._db.store_message(message, username, self.room_name)
+            _id = await sync_to_async(models.ChatName.objects.get)(chat_name=self.room_name)
+            d = models.Messages(
+                chat_id_id=_id.id,
+                message=message,
+                sender=username,
+            )
+            old_message = await sync_to_async(models.Messages.objects.order_by)('date_time')
+            old_message = await sync_to_async(list)(old_message)
+            old_message = old_message[0]
+            if old_message.message != message:
+                try:
+                    await sync_to_async(d.save, thread_sensitive=True)()
+                except IntegrityError:
+                    pass
+
+        # self._db.store_message(message, username, self.room_name)
