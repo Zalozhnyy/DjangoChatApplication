@@ -2,7 +2,8 @@
 {% block title %}Dashboard{% endblock %}
 {% block content %}
 <h1>Dashboard</h1>
-<p>Welcome to your dashboard.</p>
+<p>Welcome to your dashboard .</p>
+    <input type="text" id="mytext" disabled="true">
 
 <html lang="en">
 
@@ -40,6 +41,9 @@
 <script>
 
     const user_username = JSON.parse(document.getElementById('user_username').textContent);
+
+    document.getElementById("mytext").value = user_username;//Now you get the js variable inside your form element
+
 
     document.querySelector('#submit').onclick = async function (e) {
         const messageInputDom = document.querySelector('#input');
