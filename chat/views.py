@@ -17,7 +17,7 @@ def user_exist(request, username):
         'exist': User.objects.filter(username=username).exists(),
         'user_name': username
     }
-    print(f'User exist func |  {username} is {out["exist"]}')
+    # print(f'User exist func |  {username} is {out["exist"]}')
     return JsonResponse(out)
 
 
