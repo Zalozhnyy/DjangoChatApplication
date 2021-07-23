@@ -28,11 +28,14 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
+        await self._push_messages(await self._get_old_messages())
+
+    async def _get_old_messages(self):
         _chat_id = await sync_to_async(models.ChatName.objects.get, thread_sensitive=True)(chat_name=self.room_name)
         old_messages = await sync_to_async(models.Messages.objects.filter, thread_sensitive=True)(
             chat_id_id=_chat_id.id)
         old_messages = await sync_to_async(list)(old_messages)
-        await self._push_messages(old_messages)
+        return old_messages
 
     async def _push_messages(self, old_messages):
         for message in old_messages:
@@ -61,7 +64,17 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
             }
         )
 
-    async def chatroom_message(self, event, send_db=True):
+        '''добавление сообщения в бд'''
+        _id = await sync_to_async(models.ChatName.objects.get)(chat_name=self.room_name)
+        d = models.Messages(
+            chat_id_id=_id.id,
+            message=message,
+            sender=username,
+        )
+        await sync_to_async(d.save, thread_sensitive=True)()
+        # self._db.store_message(message, username, self.room_name)
+
+    async def chatroom_message(self, event):
         message = event['message']
         username = event['username']
 
@@ -69,21 +82,3 @@ class ChatRoomConsumer(AsyncWebsocketConsumer):
             'message': message,
             'username': username,
         }))
-
-        if send_db:
-            _id = await sync_to_async(models.ChatName.objects.get)(chat_name=self.room_name)
-            d = models.Messages(
-                chat_id_id=_id.id,
-                message=message,
-                sender=username,
-            )
-            old_message = await sync_to_async(models.Messages.objects.order_by)('date_time')
-            old_message = await sync_to_async(list)(old_message)
-            old_message = old_message[0]
-            if old_message.message != message:
-                try:
-                    await sync_to_async(d.save, thread_sensitive=True)()
-                except IntegrityError:
-                    pass
-
-        # self._db.store_message(message, username, self.room_name)
