@@ -12,6 +12,7 @@ def index(request):
     return redirect('/login/')
 
 
+@login_required
 def user_exist(request, username):
     out = {
         'exist': User.objects.filter(username=username).exists(),
